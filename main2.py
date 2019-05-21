@@ -1,4 +1,4 @@
-from Blackjack import Deck, Dealer, Agent, MonteCarlo
+from Blackjack2 import Deck, Dealer, Agent, MonteCarlo
 import matplotlib.pyplot as plt
 
 # Const
@@ -13,9 +13,8 @@ deck = Deck()
 
 # train 1M iters
 mc = MonteCarlo()
-mc.train(dealer, agent, deck, 1, True)
+mc.train(dealer, agent, deck, 1000000, False)
 
-"""
 # initialize variable
 current = 10000
 wins = 0
@@ -38,5 +37,3 @@ for i in range(1000):
 print ("WIN RATE: {:.3f}%".format(wins / 10))
 plt.plot(x, y)
 plt.show()
-
-"""
