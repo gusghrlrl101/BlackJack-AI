@@ -4,15 +4,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 
-counting = [0 for i in range(13)]
-showed = 0
-
-def refresh_counting(num):
-    global counting, counting
-    counting[num] += 1
-    if sum(counting) >= 52:
-        for i in counting:
-            i = 0
 
 class Deck(object):
     """
@@ -132,15 +123,6 @@ class Dealer(object):
             return -1
 
         dealer_sum = self.action(deck)              # 딜러의 카드 합 계산
-        
-        isThere = False
-        for i in self.hands:
-            if i is showed:
-                if isThere:
-                    refresh_counting(i)
-                else:
-                    isThere = True
-
         if dealer_sum > 21:                         # 딜러가 Bust (승)
             return 1
         if dealer_sum > agent_sum:                  # 딜러의 카드 합 > 플레이어 합 (패)
@@ -178,7 +160,6 @@ class Agent(object):
         if new_card == 11:
             self.usable_ace.append(len(self.hands))
         self.hands.append(new_card)
-        refresh_counting(new_card)
 
     def calculate_sum(self):
         """
@@ -198,7 +179,6 @@ class Agent(object):
         True = hit, False = stick
         :return:
         """
-
         return random.choice([True, False])
 
     def policy(self, state):
@@ -253,10 +233,8 @@ class Agent(object):
                 self.Q_table[(state, action)] = [mean, count]  # 업데이트
 
 
-
 class MonteCarlo(object):
-
-    def generate_episode(self, dealer: Dealer, agent: Agent, deck: Deck):
+    def generate_episode(self, dealer: Dealer, agent: Agent, deck: Deck, train=True):
         """
         하나의 에피소드(게임)를 생성함
         :param dealer:
@@ -266,10 +244,7 @@ class MonteCarlo(object):
         """
         
         # 카드 덱, 딜러, Agent를 초기화
-        if len(deck.card_deck) < 15:
-            deck2 = Deck()
-            deck.card_deck = deck2.card_deck + deck.card_deck
-
+        deck.reset()
         dealer.reset()
         agent.reset()
         agent.hit(deck)
@@ -287,24 +262,26 @@ class MonteCarlo(object):
             if sums < 12:
                 agent.hit(deck)
                 continue
-            global showed
-            showed = dealer.show()
-            refresh_counting(showed)
 
-            state = (sums, bool(agent.usable_ace), showed, tuple(counting))
+            state = (sums, bool(agent.usable_ace), dealer.show())
 
-            ########   Exploring Start ~!!!!!!!!! : 
-            if len(episode) == 0:       # 첫번째 State 일 때는 무작위 Action 선택
-                action = agent.random_action()
-            else:                       # 그 외에는 Q 테이블에서 큰 값을 갖는 Action 선택
+
+            # if not train, only use policy
+            if train:
+                ########   Exploring Start ~!!!!!!!!! : 
+                if len(episode):       # 첫번째 State 일 때는 무작위 Action 선택
+                    action = agent.random_action()
+                else:                       # 그 외에는 Q 테이블에서 큰 값을 갖는 Action 선택
+                    action = agent.policy(state)
+            else:
                 action = agent.policy(state)
-            
+
             done, reward = dealer.observation(action, agent, deck)  # 에피소드 종료 여부, Reward 계산
             
             # 생성된 State, Action, Reward를 에피소드에 추가
             episode.append([state, action, reward])
 
-        return episode, deck
+        return episode
 
     def train(self, dealer: Dealer, agent: Agent, deck: Deck, it=10000, verbose=True):
         count = 0
@@ -333,8 +310,8 @@ class MonteCarlo(object):
                 total_draw += draw
 
                 print("========== Training : Episode ", count, " ===========")
-                print("Recent 1000 games win rate :{:.3f}%".format(win / (win + loss) * 100))
-                print(" -- 1000 Games WIN :", win, "DRAW :", draw, "LOSS :", loss)
+                print("Recent 10000 games win rate :{:.3f}%".format(win / (win + loss) * 100))
+                print(" -- 10000 Games WIN :", win, "DRAW :", draw, "LOSS :", loss)
                 print("Total win rate : {:.3f}%".format(total_win / (total_win + total_loss) * 100))
                 print(" -- TOTAL Games WIN :", total_win, "DRAW :", total_draw, "LOSS :", total_loss)
 

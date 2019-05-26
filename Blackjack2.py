@@ -4,6 +4,15 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 
+counting = [0 for i in range(13)]
+showed = 0
+
+def refresh_counting(num):
+    global counting, counting
+    counting[num] += 1
+    if sum(counting) >= 52:
+        for i in counting:
+            i = 0
 
 class Deck(object):
     """
@@ -173,15 +182,58 @@ class Agent(object):
             sums = sum(self.hands)
         return sums
 
-    def random_action(self):
+    def random_action(self, showed):
         """
         랜덤하게 행동
         True = hit, False = stick
         :return:
         """
-        return random.choice([True, False])
 
-    def policy(self, state):
+        result = random.choice([True, False])
+        sums = sum(self.hands)
+
+        # ace
+        if len(self.usable_ace) > 0:
+            if 13 <= sums and sums <= 17:
+                result = True
+            elif sums == 18:
+                if (3 <= showed and showed <= 6) or showed == 9 or showed == 10:
+                    result = True
+                elif showed == 1 or showed == 2 or showed == 8:
+                    result = False
+            elif sums == 19 or sums == 20:
+                result = False
+        # no ace
+        else:
+            if sums < 11:
+                result = True
+            elif sums == 12:
+                if 4 <= showed and showed <= 6:
+                    result = False
+                else:
+                    result = True
+            elif sums == 13 or sums ==14:
+                if (7 <= showed and showed <= 10) or showed == 1:
+                    result = True
+                else:
+                    result = False
+            elif sums == 15:
+                if 7 <= showed and showed <= 9:
+                    result = True
+                else:
+                    result = False
+            elif sums == 14:
+                if showed == 7 or showed == 8:
+                    result = True
+                else:
+                    result = False
+            elif 17 <= sums:
+                result = False
+
+        return result
+
+
+    def policy(self, state, showed):
         """
         Agent의 policy 함수.
         e의 확률로 랜덤 행동을 하며, 그 외에는 현재 state에서 큰 q(s,a)값을 갖는 action을 선택함
@@ -199,7 +251,7 @@ class Agent(object):
         if self.Q_table[(state, True)] > self.Q_table[(state, False)]:
             return True     # Hit
         elif self.Q_table[(state, True)] == self.Q_table[(state, False)]:   # q값이 같으면 무작위추출
-            return self.random_action()
+            return self.random_action(showed)
         else:
             return False    # Stick
 
@@ -234,7 +286,7 @@ class Agent(object):
 
 
 class MonteCarlo(object):
-    def generate_episode(self, dealer: Dealer, agent: Agent, deck: Deck):
+    def generate_episode(self, dealer: Dealer, agent: Agent, deck: Deck, train=True):
         """
         하나의 에피소드(게임)를 생성함
         :param dealer:
@@ -244,7 +296,15 @@ class MonteCarlo(object):
         """
         
         # 카드 덱, 딜러, Agent를 초기화
-        deck.reset()
+
+
+#        deck.reset()
+
+        # add new deck to front
+        if len(deck.card_deck) < 15:
+            deck2 = Deck()
+            deck.card_deck = deck2.card_deck + deck.card_deck
+
         dealer.reset()
         agent.reset()
         agent.hit(deck)
@@ -263,16 +323,17 @@ class MonteCarlo(object):
                 agent.hit(deck)
                 continue
 
-            state = (sums, bool(agent.usable_ace), dealer.show())
+            showed = dealer.show()
+            state = (sums, bool(agent.usable_ace), showed)
 
             ########   Exploring Start ~!!!!!!!!! : 
-            if len(episode) == 0:       # 첫번째 State 일 때는 무작위 Action 선택
-                action = agent.random_action()
+            if len(episode) == 0 and train:       # 첫번째 State 일 때는 무작위 Action 선택
+                action = agent.random_action(showed)
             else:                       # 그 외에는 Q 테이블에서 큰 값을 갖는 Action 선택
-                action = agent.policy(state)
+                action = agent.policy(state, showed)
             
             done, reward = dealer.observation(action, agent, deck)  # 에피소드 종료 여부, Reward 계산
-            
+
             # 생성된 State, Action, Reward를 에피소드에 추가
             episode.append([state, action, reward])
 

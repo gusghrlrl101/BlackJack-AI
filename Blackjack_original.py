@@ -3,16 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
-
-counting = [0 for i in range(13)]
-showed = 0
-
-def refresh_counting(num):
-    global counting, counting
-    counting[num] += 1
-    if sum(counting) >= 52:
-        for i in counting:
-            i = 0
+from matplotlib import colors
 
 class Deck(object):
     """
@@ -132,15 +123,6 @@ class Dealer(object):
             return -1
 
         dealer_sum = self.action(deck)              # 딜러의 카드 합 계산
-        
-        isThere = False
-        for i in self.hands:
-            if i is showed:
-                if isThere:
-                    refresh_counting(i)
-                else:
-                    isThere = True
-
         if dealer_sum > 21:                         # 딜러가 Bust (승)
             return 1
         if dealer_sum > agent_sum:                  # 딜러의 카드 합 > 플레이어 합 (패)
@@ -178,7 +160,6 @@ class Agent(object):
         if new_card == 11:
             self.usable_ace.append(len(self.hands))
         self.hands.append(new_card)
-        refresh_counting(new_card)
 
     def calculate_sum(self):
         """
@@ -198,7 +179,6 @@ class Agent(object):
         True = hit, False = stick
         :return:
         """
-
         return random.choice([True, False])
 
     def policy(self, state):
@@ -255,7 +235,6 @@ class Agent(object):
 
 
 class MonteCarlo(object):
-
     def generate_episode(self, dealer: Dealer, agent: Agent, deck: Deck):
         """
         하나의 에피소드(게임)를 생성함
@@ -266,10 +245,7 @@ class MonteCarlo(object):
         """
         
         # 카드 덱, 딜러, Agent를 초기화
-        if len(deck.card_deck) < 15:
-            deck2 = Deck()
-            deck.card_deck = deck2.card_deck + deck.card_deck
-
+        deck.reset()
         dealer.reset()
         agent.reset()
         agent.hit(deck)
@@ -287,15 +263,12 @@ class MonteCarlo(object):
             if sums < 12:
                 agent.hit(deck)
                 continue
-            global showed
-            showed = dealer.show()
-            refresh_counting(showed)
 
-            state = (sums, bool(agent.usable_ace), showed, tuple(counting))
+            state = (sums, bool(agent.usable_ace), dealer.show())
 
             ########   Exploring Start ~!!!!!!!!! : 
             if len(episode) == 0:       # 첫번째 State 일 때는 무작위 Action 선택
-                action = agent.random_action()
+                action =agent.random_action()
             else:                       # 그 외에는 Q 테이블에서 큰 값을 갖는 Action 선택
                 action = agent.policy(state)
             
@@ -304,7 +277,7 @@ class MonteCarlo(object):
             # 생성된 State, Action, Reward를 에피소드에 추가
             episode.append([state, action, reward])
 
-        return episode, deck
+        return episode
 
     def train(self, dealer: Dealer, agent: Agent, deck: Deck, it=10000, verbose=True):
         count = 0
@@ -327,7 +300,7 @@ class MonteCarlo(object):
             else:
                 loss += 1
 
-            if count % 10000 == 0 and verbose == True:
+            if count % 1000 == 0 and verbose == True:
                 total_win += win
                 total_loss += loss
                 total_draw += draw
@@ -342,85 +315,5 @@ class MonteCarlo(object):
                 loss = 0
                 draw = 0
 
-
-def plot_q_val(agent: Agent, usable_ace=True):
-    fig = plt.figure()
-    ax = Axes3D(fig)
-
-    hands = set()
-    dealer_show = set()
-
-    for state, action in sorted(agent.Q_table.keys()):
-        hands.add(state[0])
-        dealer_show.add(state[2])
-
-    Z_list = list()
-
-    l = list()
-
-    for d in dealer_show:
-        l = []
-        for hand in hands:
-            if ((hand, usable_ace, d), True) not in agent.Q_table.keys():
-                agent.Q_table[((hand, usable_ace, d), True)] = [0, 0]
-            if ((hand, usable_ace, d), False) not in agent.Q_table.keys():
-                agent.Q_table[((hand, usable_ace, d), False)] = [0, 0]
-            v_val = max([agent.Q_table[((hand, usable_ace, d), True)][0], agent.Q_table[((hand, usable_ace, d), False)][0]])
-            l.append(v_val)
-        Z_list.append(l)
-
-    Y = np.array(list(hands))
-    X = np.array(list(dealer_show))
-    if usable_ace:
-        X, Y = np.meshgrid(X, Y)
-    else:
-        X, Y = np.meshgrid(X, Y)
-
-    Z = np.array(Z_list).T
-
-    ax.plot_wireframe(X, Y, Z)
-    plt.show()
-
-
-def plot_action(agent: Agent, usable_ace=True):
-    hands = set()
-    dealer_show = set()
-
-    for state, action in sorted(agent.Q_table.keys()):
-        hands.add(state[0])
-        dealer_show.add(state[2])
-
-    Z_list = list()
-
-    l = list()
-
-    action = False
-
-    for d in dealer_show:
-        l = []
-        for hand in hands:
-            if ((hand, usable_ace, d), True) not in agent.Q_table.keys():
-                agent.Q_table[((hand, usable_ace, d), True)] = [0, 0]
-            if ((hand, usable_ace, d), False) not in agent.Q_table.keys():
-                agent.Q_table[((hand, usable_ace, d), False)] = [0, 0]
-            l.append(0 if agent.Q_table[((hand, usable_ace, d), True)][0] > agent.Q_table[((hand, usable_ace, d), False)][0] else 1)
-        Z_list.append(l)
-
-    Y = np.array(list(hands))
-    X = np.array(list(dealer_show))
-    if usable_ace:
-        X, Y = np.meshgrid(X, Y)
-    else:
-        X, Y = np.meshgrid(X, Y)
-    Z = np.array(Z_list).T
-
-    data = Z[::-1,:]
-    data = np.append(data, [0 for _ in range(Z[0].shape[0])]).reshape(-1,Z[0].shape[0])
-    
-    cmap=cm.coolwarm
-    plt.imshow(data, cmap=cmap, extent=[1,11,11,21])
-
-    plt.show()
-    return X, Y, Z
 
 
