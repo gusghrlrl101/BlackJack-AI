@@ -1,4 +1,4 @@
-from Blackjack_original import Deck, Dealer, Agent, MonteCarlo
+from Blackjack_counting import Deck, Dealer, Agent, MonteCarlo
 import matplotlib.pyplot as plt
 
 # Const
