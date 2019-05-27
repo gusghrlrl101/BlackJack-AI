@@ -34,16 +34,20 @@ for i in range(1000):
 	dealer.hit(deck)
 	dealer.hit(deck)
 
-	# if less than 12, get one more card
-	sums = agent.calculate_sum()
-	if sums < 12:
-		agent.hit(deck)
-		continue
+	showed = dealer.show()
+	done = False
 
 	# play 1 game
-	state = (sums, bool(agent.usable_ace), dealer.show())
-	action = agent.policy(state)
-	done, reward = dealer.observation(action, agent, deck)
+	while not done:
+		# if less than 12, get one more card
+		sums = agent.calculate_sum()
+		if sums < 12:
+			agent.hit(deck)
+			continue
+
+		state = (sums, bool(agent.usable_ace), showed)
+		action = agent.policy(state)
+		done, reward = dealer.observation(action, agent, deck)
 
 	# update result
 	if reward is WIN:

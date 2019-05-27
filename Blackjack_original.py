@@ -233,7 +233,6 @@ class Agent(object):
                 self.Q_table[(state, action)] = [mean, count]  # 업데이트
 
 
-
 class MonteCarlo(object):
     def generate_episode(self, dealer: Dealer, agent: Agent, deck: Deck):
         """
@@ -257,6 +256,8 @@ class MonteCarlo(object):
 
         episode = list()    # 에피소드
 
+        showed = dealer.show()
+
         while not done:
             # 에피소드가 끝날 때까지 State, Action, Reward를 생성
             sums = agent.calculate_sum()
@@ -264,7 +265,7 @@ class MonteCarlo(object):
                 agent.hit(deck)
                 continue
 
-            state = (sums, bool(agent.usable_ace), dealer.show())
+            state = (sums, bool(agent.usable_ace), showed)
 
             ########   Exploring Start ~!!!!!!!!! : 
             if len(episode) == 0:       # 첫번째 State 일 때는 무작위 Action 선택

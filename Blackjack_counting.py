@@ -1,20 +1,26 @@
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib import colors
 
 ##
 counting = [0 for i in range(12)]
+counting_temp = [0 for i in range(12)]
 
 def refresh_counting(num):
     global counting
     counting[num] += 1
-#### TODO: counting is not correct ####
-#    print (counting)
     if sum(counting) >= 52:
         counting = [0 for i in range(12)]
+
+def refresh_counting_temp(num):
+    global counting_temp
+    counting_temp[num] += 1
+    if sum(counting_temp) >= 52:
+        counting_temp = [0 for i in range(12)]
 ##
 
 class Deck(object):
@@ -54,9 +60,6 @@ class Dealer(object):
         """
         self.hands = list()
         self.usable_ace = list()
-        ##
-        self.showed = -1
-        ##
 
     def hit(self, deck: Deck):
         """
@@ -67,7 +70,10 @@ class Dealer(object):
         new_card = deck.draw()
         if new_card == 11:
             self.usable_ace.append(len(self.hands))
-        self.hands.append(new_card)
+        self.hands.append(new_card)      
+        ##
+        refresh_counting(new_card)
+        ##
 
     def show(self):
         """
@@ -76,8 +82,7 @@ class Dealer(object):
         """
         card = random.choice(self.hands)
         ##
-        refresh_counting(card)
-        self.showed = card
+        refresh_counting_temp(card)
         ##
         if card == 11:
             card = 1
@@ -128,21 +133,6 @@ class Dealer(object):
             done = True
             reward = self.calcuate_reward(agent, deck)
 
-        ##
-        isFirst = True
-        for card in self.hands:
-            if card is 1:
-                card = 11
-
-            if card is self.showed:
-                if isFirst:
-                    isFirst = False
-                else:
-                    refresh_counting(card)
-            else:
-                refresh_counting(card)
-        ##
-
         return done, reward
 
     def calcuate_reward(self, agent, deck):
@@ -172,7 +162,6 @@ class Dealer(object):
         self.hands = list()
         self.usable_ace = list()
 
-
 class Agent(object):
     def __init__(self):
         """
@@ -193,6 +182,7 @@ class Agent(object):
         new_card = deck.draw()
         ##
         refresh_counting(new_card)
+        refresh_counting_temp(new_card)
         ##
         if new_card == 11:
             self.usable_ace.append(len(self.hands))
@@ -271,7 +261,6 @@ class Agent(object):
                 self.Q_table[(state, action)] = [mean, count]  # 업데이트
 
 
-
 class MonteCarlo(object):
     def generate_episode(self, dealer: Dealer, agent: Agent, deck: Deck):
         """
@@ -282,6 +271,8 @@ class MonteCarlo(object):
         :return:
         """
         
+        global counting, counting_temp
+
         # 카드 덱, 딜러, Agent를 초기화
         ##
         if len(deck.card_deck) < 15:
@@ -299,6 +290,7 @@ class MonteCarlo(object):
 
         episode = list()    # 에피소드
 
+        showed = dealer.show()
         while not done:
             # 에피소드가 끝날 때까지 State, Action, Reward를 생성
             sums = agent.calculate_sum()
@@ -307,13 +299,12 @@ class MonteCarlo(object):
                 continue
 
             ##
-            global counting
-            state = (sums, bool(agent.usable_ace), dealer.show(), tuple(counting[2:]))
+            state = (sums, bool(agent.usable_ace), showed, tuple(counting_temp[2:]))
             ##
 
             ########   Exploring Start ~!!!!!!!!! : 
             if len(episode) == 0:       # 첫번째 State 일 때는 무작위 Action 선택
-                action =agent.random_action()
+                action = agent.random_action()
             else:                       # 그 외에는 Q 테이블에서 큰 값을 갖는 Action 선택
                 action = agent.policy(state)
             
@@ -321,6 +312,10 @@ class MonteCarlo(object):
             
             # 생성된 State, Action, Reward를 에피소드에 추가
             episode.append([state, action, reward])
+
+        ##
+        counting_temp = copy.deepcopy(counting)
+        ##
 
         return episode
 

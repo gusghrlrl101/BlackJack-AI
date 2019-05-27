@@ -1,5 +1,7 @@
-from Blackjack_counting import Deck, Dealer, Agent, MonteCarlo
-import matplotlib.pyplot as plt
+from Blackjack_counting import Deck, Dealer, Agent, MonteCarlo, counting_temp
+import matplotlib.pyplot as plt	
+
+# TODO: import counting to 1000 games
 
 # Const
 WIN = 1
@@ -23,10 +25,14 @@ draws = 0
 x = [0]
 y = [money]
 
+
 # [1] play 1000 games
 for i in range(1000):
 	# initialize
-	deck.reset()
+	if len(deck.card_deck) < 15:
+		deck2 = Deck()
+		deck.card_deck = deck2.card_deck + deck.card_deck
+
 	dealer.reset()
 	agent.reset()
 	agent.hit(deck)
@@ -34,16 +40,21 @@ for i in range(1000):
 	dealer.hit(deck)
 	dealer.hit(deck)
 
-	# if less than 12, get one more card
-	sums = agent.calculate_sum()
-	if sums < 12:
-		agent.hit(deck)
-		continue
+	showed = dealer.show()
+	done = False
 
 	# play 1 game
-	state = (sums, bool(agent.usable_ace), dealer.show())
-	action = agent.policy(state)
-	done, reward = dealer.observation(action, agent, deck)
+	while not done:
+		# if less than 12, get one more card
+		sums = agent.calculate_sum()
+		if sums < 12:
+			agent.hit(deck)
+			continue
+
+		print (counting_temp)
+		state = (sums, bool(agent.usable_ace), showed)
+		action = agent.policy(state)
+		done, reward = dealer.observation(action, agent, deck)
 
 	# update result
 	if reward is WIN:
