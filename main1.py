@@ -1,4 +1,4 @@
-from Blackjack_original import Deck, Dealer, Agent, MonteCarlo
+from Blackjack1 import Deck, Dealer, Agent, MonteCarlo
 import matplotlib.pyplot as plt
 
 # Const
@@ -66,7 +66,7 @@ for i in range(1000):
 
 # [2] show win rate
 print("========== Testing : Episode 1000 ===========")
-print("TOTAL Games WIN :", wins, "DRAW :", loses, "LOSS :", draws)
+print("TOTAL Games WIN :", wins, "DRAW :", draws, "LOSS :", loses)
 print("Total win rate : {:.3f}%".format(wins / (wins + loses) * 100))
 
 # [3] plot money

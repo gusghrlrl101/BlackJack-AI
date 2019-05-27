@@ -21,6 +21,63 @@ def refresh_counting_temp(num):
     counting_temp[num] += 1
     if sum(counting_temp) >= 52:
         counting_temp = [0 for i in range(12)]
+
+def get_counting():
+    global counting
+    return counting
+
+def get_counting_temp():
+    global counting_temp
+    return counting_temp
+
+def copy_counting():
+    global counting, counting_temp
+    counting_temp = copy.deepcopy(counting)
+    
+def calculate_counting():
+    global counting_temp
+    result = 0
+    for i, cnt in enumerate(counting_temp):
+        if 2 <= i and i <= 6:
+            result += cnt
+        elif 10 <= i:
+            result -= cnt
+    result /= (52 - len(counting_temp)) / 13.0
+    return round(result)
+
+def calculate_counting2():
+    global counting_temp
+    result = 0
+    for i, cnt in enumerate(counting_temp):
+        if 2 <= i and i <= 7:
+            if i == 4 or i == 5:
+                result += cnt * 2
+            else:
+                result += cnt
+        elif i == 10:
+            result -= cnt * 2
+    result /= (52 - len(counting_temp)) / 13.0
+    return round(result)
+
+def calculate_counting3():
+    global counting_temp
+    result = 0
+    for i, cnt in enumerate(counting_temp):
+        if i == 2 or i == 3 or i == 6:
+            result += cnt * 2
+        elif i == 4:
+            result += cnt * 3
+        elif i == 5:
+            result += cnt * 4
+        elif i == 7:
+            result += cnt
+        elif i == 9:
+            result -= cnt * 2
+        elif i == 10:
+            result -= cnt * 3
+    result /= (52 - len(counting_temp)) / 13.0
+    return round(result)
+
 ##
 
 class Deck(object):
@@ -43,6 +100,10 @@ class Deck(object):
         deck = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11]
         self.card_deck = deck * 4
         self.shuffle()
+
+        global counting, counting_temp
+        counting = [0 for i in range(12)]
+        counting_temp = [0 for i in range(12)]
 
 
 class Dealer(object):
@@ -161,6 +222,7 @@ class Dealer(object):
         """
         self.hands = list()
         self.usable_ace = list()
+
 
 class Agent(object):
     def __init__(self):
@@ -299,7 +361,7 @@ class MonteCarlo(object):
                 continue
 
             ##
-            state = (sums, bool(agent.usable_ace), showed, tuple(counting_temp[2:]))
+            state = (sums, bool(agent.usable_ace), showed, calculate_counting3())
             ##
 
             ########   Exploring Start ~!!!!!!!!! : 
@@ -314,7 +376,7 @@ class MonteCarlo(object):
             episode.append([state, action, reward])
 
         ##
-        counting_temp = copy.deepcopy(counting)
+        copy_counting()
         ##
 
         return episode
