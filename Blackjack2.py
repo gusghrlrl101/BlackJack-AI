@@ -34,7 +34,7 @@ def copy_counting():
     global counting, counting_temp
     counting_temp = copy.deepcopy(counting)
     
-def calculate_counting():
+def calculate_counting1():
     global counting_temp
     result = 0
     for i, cnt in enumerate(counting_temp):
@@ -361,6 +361,7 @@ class MonteCarlo(object):
                 continue
 
             ##
+            # changes counting method
             state = (sums, bool(agent.usable_ace), showed, calculate_counting3())
             ##
 

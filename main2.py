@@ -1,8 +1,6 @@
-from Blackjack2 import Deck, Dealer, Agent, MonteCarlo, get_counting, get_counting_temp, copy_counting, calculate_counting, calculate_counting2, calculate_counting3
+from Blackjack2 import Deck, Dealer, Agent, MonteCarlo, get_counting, get_counting_temp, copy_counting, calculate_counting1, calculate_counting2, calculate_counting3
 import matplotlib.pyplot as plt
 import copy
-
-# TODO: import counting to 1000 games
 
 # Const
 WIN = 1
@@ -16,7 +14,7 @@ deck = Deck()
 
 # train 1M iters
 mc = MonteCarlo()
-mc.train(dealer, agent, deck, 10000000, True)
+mc.train(dealer, agent, deck, 1000000, True)
 
 # initialize variable
 money = 10000
@@ -29,7 +27,7 @@ y = [money]
 deck.reset()
 
 # [1] play 1000 games
-for i in range(1000000):
+for i in range(1000):
 	# initialize
 	if len(deck.card_deck) < 15:
 		deck2 = Deck()
@@ -53,6 +51,7 @@ for i in range(1000000):
 			agent.hit(deck)
 			continue
 
+		# changes counting method
 		state = (sums, bool(agent.usable_ace), showed, calculate_counting3())
 		action = agent.policy(state)
 		done, reward = dealer.observation(action, agent, deck)
@@ -74,7 +73,7 @@ for i in range(1000000):
 	y.append(money)
 
 # [2] show win rate
-print("========== Testing : Episode 1000000 ===========")
+print("========== Testing : Episode 1000 ===========")
 print("TOTAL Games WIN :", wins, "DRAW :", draws, "LOSE :", loses)
 print("Total win rate : {:.3f}%".format(wins / (wins + loses) * 100))
 
